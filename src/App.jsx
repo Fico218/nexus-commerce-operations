@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Boxes, FileImage, LayoutDashboard, LogOut, Package, Plus, ReceiptText, Search, ShieldCheck } from "lucide-react";
 import { isConfigured, supabase } from "./supabase.js";
 
