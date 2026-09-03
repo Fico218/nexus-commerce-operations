@@ -9,12 +9,18 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
   async function submit(event) {
     event.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setNotice(error ? error.message : "Signed in successfully.");
+    const action = isRegistering ? supabase.auth.signUp({ email, password }) : supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await action;
+    if (error) {
+      setNotice(error.message);
+      return;
+    }
+    setNotice(isRegistering && !data.session ? "Account created. Check your email to confirm your account." : isRegistering ? "Account created successfully." : "Signed in successfully.");
   }
-  return <main className="login"><section><p className="eyebrow">NEXUS / COMMERCE OPERATIONS</p><h1>One operational view for every product decision.</h1><p className="lead">A PIM, DAM and inventory workspace built to move product teams from scattered data to confident execution.</p><div className="login-points"><span><ShieldCheck /> Supabase Auth</span><span><Boxes /> Inventory ledger</span><span><FileImage /> Asset workflow</span></div></section><form onSubmit={submit} className="auth-card"><p className="eyebrow">WORKSPACE ACCESS</p><h2>Welcome back</h2><label>Work email<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required placeholder="you@company.com" /></label><label>Password<input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required /></label><button>Sign in <span>→</span></button>{notice && <p className="notice">{notice}</p>}</form></main>;
+  return <main className="login"><section><p className="eyebrow">NEXUS / COMMERCE OPERATIONS</p><h1>One operational view for every product decision.</h1><p className="lead">A PIM, DAM and inventory workspace built to move product teams from scattered data to confident execution.</p><div className="login-points"><span><ShieldCheck /> Supabase Auth</span><span><Boxes /> Inventory ledger</span><span><FileImage /> Asset workflow</span></div></section><form onSubmit={submit} className="auth-card"><p className="eyebrow">WORKSPACE ACCESS</p><h2>{isRegistering ? "Create your account" : "Welcome back"}</h2><label>Work email<input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required placeholder="you@company.com" /></label><label>Password<input value={password} onChange={(e) => setPassword(e.target.value)} type="password" minLength="6" required /></label><button>{isRegistering ? "Create account" : "Sign in"} <span>→</span></button><button type="button" className="auth-switch" onClick={() => { setIsRegistering(!isRegistering); setNotice(""); }}>{isRegistering ? "Already have an account? Sign in" : "New here? Create an account"}</button>{notice && <p className="notice">{notice}</p>}</form></main>;
 }
 
 function App() {

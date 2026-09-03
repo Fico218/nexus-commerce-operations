@@ -18,7 +18,7 @@ React 19, Vite, Supabase Auth, PostgreSQL, Row Level Security and Supabase Stora
 
 1. Create a new Supabase project.
 2. Run `supabase/schema.sql` in the Supabase SQL Editor.
-3. In **Authentication > Providers**, enable Email. Create a user from **Authentication > Users**, or use the registration screen.
+3. In **Authentication > Providers**, enable Email. Users can register from the Nexus login screen using **New here? Create an account**. For a faster portfolio demo, disable **Confirm email** in the Email provider settings; otherwise the user must confirm the email before signing in.
 4. Copy `.env.example` to `.env` and set the project URL plus its publishable/anon key from **Project Settings > API**.
 5. Install and run:
 
