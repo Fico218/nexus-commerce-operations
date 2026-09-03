@@ -22,25 +22,36 @@ function App() {
   const [active, setActive] = useState("overview");
   const [data, setData] = useState({ products: [], categories: [], assets: [], movements: [], orders: [] });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   useEffect(() => { if (!isConfigured) return; supabase.auth.getSession().then(({ data }) => setSession(data.session)); const { data: listener } = supabase.auth.onAuthStateChange((_, next) => setSession(next)); return () => listener.subscription.unsubscribe(); }, []);
   async function load() {
     setLoading(true);
-    const [products, inventory, categories, assets, movements, orders] = await Promise.all([
-      supabase.from("products").select("*, categories(name)").order("created_at", { ascending: false }),
-      supabase.from("product_inventory").select("product_id, quantity_on_hand"),
-      supabase.from("categories").select("*").order("name"),
-      supabase.from("digital_assets").select("*, products(name, sku)").order("created_at", { ascending: false }),
-      supabase.from("inventory_movements").select("*, products(name, sku)").order("created_at", { ascending: false }).limit(25),
-      supabase.from("orders").select("*").order("ordered_at", { ascending: false })
-    ]);
-    const stockByProduct = new Map((inventory.data ?? []).map((item) => [item.product_id, item.quantity_on_hand]));
-    setData({ products: (products.data ?? []).map((product) => ({ ...product, quantity_on_hand: stockByProduct.get(product.id) ?? 0 })), categories: categories.data ?? [], assets: assets.data ?? [], movements: movements.data ?? [], orders: orders.data ?? [] }); setLoading(false);
+    setError("");
+    try {
+      const [products, inventory, categories, assets, movements, orders] = await Promise.all([
+        supabase.from("products").select("*, categories(name)").order("created_at", { ascending: false }),
+        supabase.from("product_inventory").select("product_id, quantity_on_hand"),
+        supabase.from("categories").select("*").order("name"),
+        supabase.from("digital_assets").select("*, products(name, sku)").order("created_at", { ascending: false }),
+        supabase.from("inventory_movements").select("*, products(name, sku)").order("created_at", { ascending: false }).limit(25),
+        supabase.from("orders").select("*").order("ordered_at", { ascending: false })
+      ]);
+      const requestError = [products, inventory, categories, assets, movements, orders].find((result) => result.error)?.error;
+      if (requestError) throw requestError;
+      const stockByProduct = new Map((inventory.data ?? []).map((item) => [item.product_id, item.quantity_on_hand]));
+      setData({ products: (products.data ?? []).map((product) => ({ ...product, quantity_on_hand: stockByProduct.get(product.id) ?? 0 })), categories: categories.data ?? [], assets: assets.data ?? [], movements: movements.data ?? [], orders: orders.data ?? [] });
+    } catch (requestError) {
+      console.error("Could not load Nexus data:", requestError);
+      setError(requestError.message || "The workspace data could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => { if (session) load(); }, [session]);
   if (!isConfigured) return <main className="setup"><p className="eyebrow">CONFIGURATION REQUIRED</p><h1>Connect your Supabase project.</h1><p>Create `.env` from `.env.example`, then add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.</p></main>;
   if (!session) return <Login />;
   const title = nav.find(([key]) => key === active)[1];
-  return <div className="shell"><aside><div className="brand"><span>N</span><div>NEXUS<small>COMMERCE OPERATIONS</small></div></div><nav>{nav.map(([key, label, Icon]) => <button key={key} className={active === key ? "active" : ""} onClick={() => setActive(key)}><Icon />{label}</button>)}</nav><div className="account"><div className="avatar">{session.user.email[0].toUpperCase()}</div><div><strong>{session.user.email.split("@")[0]}</strong><small>Operations Admin</small></div><button aria-label="Sign out" onClick={() => supabase.auth.signOut()}><LogOut /></button></div></aside><main className="workspace"><header><div><p className="eyebrow">OPERATIONS / {title.toUpperCase()}</p><h1>{title}</h1></div>{active !== "overview" && <button className="primary" onClick={() => document.getElementById("create-dialog").showModal()}><Plus /> New {active.slice(0, -1)}</button>}</header>{loading ? <div className="loading">Loading operational data...</div> : <Module active={active} data={data} reload={load} />}</main></div>;
+  return <div className="shell"><aside><div className="brand"><span>N</span><div>NEXUS<small>COMMERCE OPERATIONS</small></div></div><nav>{nav.map(([key, label, Icon]) => <button key={key} className={active === key ? "active" : ""} onClick={() => setActive(key)}><Icon />{label}</button>)}</nav><div className="account"><div className="avatar">{session.user.email[0].toUpperCase()}</div><div><strong>{session.user.email.split("@")[0]}</strong><small>Operations Admin</small></div><button aria-label="Sign out" onClick={() => supabase.auth.signOut()}><LogOut /></button></div></aside><main className="workspace"><header><div><p className="eyebrow">OPERATIONS / {title.toUpperCase()}</p><h1>{title}</h1></div>{active !== "overview" && <button className="primary" onClick={() => document.getElementById("create-dialog").showModal()}><Plus /> New {active.slice(0, -1)}</button>}</header>{loading ? <div className="loading">Loading operational data...</div> : error ? <section className="error-card"><p className="eyebrow">DATA CONNECTION ERROR</p><h2>Supabase did not return workspace data.</h2><p>{error}</p><button className="primary" onClick={load}>Try again</button></section> : <Module active={active} data={data} reload={load} />}</main></div>;
 }
 
 function Module({ active, data, reload }) { if (active === "overview") return <Overview data={data} />; if (active === "products") return <Products data={data} reload={reload} />; if (active === "assets") return <Assets data={data} reload={reload} />; if (active === "inventory") return <Inventory data={data} reload={reload} />; return <Orders data={data} reload={reload} />; }
