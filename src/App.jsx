@@ -9,7 +9,6 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [notice, setNotice] = useState("");
-  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   async function submit(event) {
     event.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -25,6 +24,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   useEffect(() => { if (!isConfigured) return; supabase.auth.getSession().then(({ data }) => setSession(data.session)); const { data: listener } = supabase.auth.onAuthStateChange((_, next) => setSession(next)); return () => listener.subscription.unsubscribe(); }, []);
   async function load() {
     setLoading(true);
