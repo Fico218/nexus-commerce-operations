@@ -77,4 +77,8 @@ on conflict (id) do nothing;
 create policy "Authenticated users upload product assets" on storage.objects for insert to authenticated with check (bucket_id = 'product-assets');
 create policy "Public product assets are readable" on storage.objects for select to public using (bucket_id = 'product-assets');
 
-insert into public.categories (name) values ('Coffee', 'Accessories', 'Home') on conflict do nothing;
+insert into public.categories (name) values
+  ('Coffee'),
+  ('Accessories'),
+  ('Home')
+on conflict do nothing;
